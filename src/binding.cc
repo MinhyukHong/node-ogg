@@ -72,8 +72,15 @@ NAN_METHOD(node_ogg_sync_write) {
   Nan::HandleScope scope;
 
   ogg_sync_state *oy = reinterpret_cast<ogg_sync_state *>(UnwrapPointer(info[0]));
-  char *buffer = reinterpret_cast<char *>(UnwrapPointer(info[1]));
+  if (!node::Buffer::HasInstance(info[1])) {
+    return Nan::ThrowTypeError("ogg_sync_write() expects a buffer as the second argument");
+  }
   long size = static_cast<long>(info[2]->NumberValue());
+  if (size < 0 ||
+      static_cast<size_t>(size) > node::Buffer::Length(info[1].As<v8::Object>())) {
+    return Nan::ThrowRangeError("ogg_sync_write() was given a size larger than the buffer");
+  }
+  char *buffer = reinterpret_cast<char *>(UnwrapPointer(info[1]));
   Nan::Callback *callback = new Nan::Callback(info[3].As<Function>());
 
   Nan::AsyncQueueWorker(new OggSyncWriteWorker(oy, buffer, size, callback));
