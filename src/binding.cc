@@ -33,8 +33,17 @@ using namespace node;
 
 namespace nodeogg {
 
+/* True when "value" is a Buffer holding at least "size" bytes. */
+static inline bool IsBufferOfSize(v8::Local<v8::Value> value, size_t size) {
+  return node::Buffer::HasInstance(value) &&
+    node::Buffer::Length(value.As<v8::Object>()) >= size;
+}
+
 NAN_METHOD(node_ogg_sync_init) {
   Nan::HandleScope scope;
+  if (!IsBufferOfSize(info[0], sizeof(ogg_sync_state))) {
+    return Nan::ThrowTypeError("ogg_sync_init() expects a buffer of at least sizeof_ogg_sync_state bytes");
+  }
   ogg_sync_state *oy = reinterpret_cast<ogg_sync_state *>(UnwrapPointer(info[0]));
   Local<Value> rtn = Nan::New<Integer>(ogg_sync_init(oy));
   info.GetReturnValue().Set(rtn);
@@ -131,6 +140,9 @@ NAN_METHOD(node_ogg_sync_pageout) {
 
 NAN_METHOD(node_ogg_stream_init) {
   Nan::HandleScope scope;
+  if (!IsBufferOfSize(info[0], sizeof(ogg_stream_state))) {
+    return Nan::ThrowTypeError("ogg_stream_init() expects a buffer of at least sizeof_ogg_stream_state bytes");
+  }
   ogg_stream_state *os = reinterpret_cast<ogg_stream_state *>(UnwrapPointer(info[0]));
   int serialno = static_cast<int>(info[1]->IntegerValue());
   info.GetReturnValue().Set(Nan::New<Integer>(ogg_stream_init(os, serialno)));
